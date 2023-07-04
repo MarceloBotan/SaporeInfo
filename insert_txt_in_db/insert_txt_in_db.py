@@ -1,6 +1,5 @@
 import os
 import re
-from local_settings import cnx
 from local_settings import COLUMNS, COLLECTED_TXT_PATH, DB_INFO
 import mysql.connector
 
@@ -42,7 +41,7 @@ def get_info(lines) -> list:
         c_name = l.replace('\n','').split(':')
 
         if 'Hora de in' in c_name[0]:
-            c_name[0] = 'date_current'
+            c_name[0] = COLUMNS[1]
             regex = re.compile(r'(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})')
             split_date = regex.findall(c_name[1])[0]
             datetime = ''
@@ -51,8 +50,8 @@ def get_info(lines) -> list:
                 if i < len(split_date)-1:
                     datetime += '-'
         
-        if 'dateInstall' in c_name[0]:
-            c_name[0] = 'date_install'
+        if 'dateInstall' in c_name[0] or 'date_install' in c_name[0]:
+            c_name[0] = 'os_installed_at'
 
         if 'ignore' in c_name[0] and c_name[1] == 'True':
             global exclude_info
@@ -121,16 +120,22 @@ if __name__ == '__main__':
     list_dir = ''
     try:
         list_dir = os.listdir(PATH)
-
-        for file_name in list_dir:
-            if '.txt' not in file_name:
-                continue
-
-            save_info(file_name)
-            os.remove(PATH + file_name)
-            print('Deleted file', file_name)
     except:
         print('Directory ' + PATH + ' not found')
+
+    for file_name in list_dir:
+        if '.txt' not in file_name:
+            continue
+
+        try:
+            save_info(file_name)
+        except Exception as e:
+            print(e, 'on file', file_name)
+            continue
+
+        os.remove(PATH + file_name)
+        print('Deleted file', file_name)
+    
 
     cnx.commit()
     cnx.close()
